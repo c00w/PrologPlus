@@ -258,7 +258,7 @@ def test_unify():
     CE = set()
     CE.add( Statement('A(b):.'))
     CE.add(Statement('A(X):A(b)'))
-    #assert Search.search_true(CE, Predicate('A(c)'))
+    assert Search.search_true(CE, Predicate('A(c)'))
     
 def test_search():
     CE = set()
