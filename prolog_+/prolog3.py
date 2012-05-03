@@ -152,7 +152,7 @@ def procFile (f, prompt) :
         elif s == 'quit'    : sys.exit(0)
         elif s == 'dump'  :
             for rule in rules : print rule
-        elif punc == '?' : search(Term(s))
+        elif punc == '?' : print search(Term(s))
         else             : rules.append(Rule(s))
 
 # A Goal is a rule in at a certain point in its computation. 
@@ -207,8 +207,8 @@ def search (term) :
         if trace : print "Deque", c
         if c.inx >= len(c.rule.goals) :       # Is this one finished?
             if c.parent == None :            # Yes. Our original goal?
-                if c.env : print  c.env         # Yes. tell user we
-                else     : print "Yes"          # have a solution
+                if c.env : return  c.env         # Yes. tell user we
+                else     : return "Yes"          # have a solution
                 continue
             parent = copy.deepcopy(c.parent)  # Otherwise resume parent goal
             unify (c.rule.head,    c.env,
@@ -246,8 +246,7 @@ def search (term) :
                 queue.insert(0,child)
                 if trace : print "Queue", child
 
-        if len(queue) == 0:
-            print 'Unknown'
+    return 'Unknown'
             
 def add (a,b) : return Term(str(int(a.pred)+int(b.pred)),[])
 def sub (a,b) : return Term(str(int(a.pred)-int(b.pred)),[])
