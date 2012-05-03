@@ -25,6 +25,9 @@ class Atom():
     def __hash__(self):
         return hash(self.name) + hash('Variable')
         
+    def unbound(self, head):
+        return head
+        
 class Variable():
     def __init__(self, name):
         assert isvariable(name)
@@ -38,6 +41,10 @@ class Variable():
     
     def __hash__(self):
         return hash(self.name) + hash('VARIABLE')
+        
+    def unbound(self, head):
+        head.add(self)
+        return head
         
 def Term(item):
     if isvariable(item):
@@ -60,6 +67,13 @@ class Predicate():
             return False
         return self == other
         
+    def unbound(self, head):
+        assert head != None
+        for item in self.args:
+            head = item.unbound(head)
+            assert head != None
+        return head
+        
     def __repr__(self):
         return '<Predicate ' + self.Pname + ' ' + ', '.join(map(str, self.args)) + ' >'
         
@@ -68,18 +82,19 @@ class Predicate():
         Unifies a variable to a value and returns a new value
         """
         if variable not in self.args:
-            raise ValueError('Unification Error')
+            return self
         
-        unif_pred = copy(self)
+        new = copy(self)
         
         new_args = copy(self.args)
-        new_args[new_args.index(variable)] = value
+        while variable in new_args:
+            new_args[new_args.index(variable)] = value
         
-        unif_pred.args = new_args
+        new.args = new_args
         
         assert new_args != self.args
         
-        return unif_pred
+        return new
         
     def __eq__(self, other):
         if other == None:
@@ -121,6 +136,20 @@ class Conjunction():
     def __hash__(self):
         return hash(self.item) + hash(self.tail)
         
+    def unbound(self, head):
+        assert head != None
+        head = self.item.unbound(head)
+        assert head != None
+        head = self.tail.unbound(head) if self.tail else head
+        assert head != None
+        return head
+        
+    def unify(self, variable, atom):
+        new = copy(self)
+        new.head = self.item.unify(variable, atom)
+        new.tail = self.tail.unify(variable, atom) if self.tail else None
+        return new
+        
 class Statement():
     def __init__(self, item):
         assert ':' in item
@@ -136,6 +165,14 @@ class Statement():
             self.right = Conjunction(rh)
         else:
             self.right = Predicate(rh)
+            
+    def unbound(self, head):
+        assert head != None
+        head = self.left.unbound(head)
+        assert head != None
+        head = self.right.unbound(head) if self.right else head
+        assert head != None
+        return head
 
     def __repr__(self):
         return '<Statement ' + str(self.left) + ' ' + str(self.right) + ' >'
@@ -143,31 +180,85 @@ class Statement():
     def __contains__(self, item):
         return item in self.left
         
+    def unify(self, variable, atom):
+        new = copy(self)
+        new.left = self.left.unify(variable, atom)
+        new.right = self.right.unify(variable, atom) if self.right else None
+        return new
+        
     def true(self, item, CE):
+        mappings = {}
         new_CE = copy(CE)
         if self in new_CE:
             new_CE.remove(self)
-        if item in self.left:
-            if self.right == None or self.right.true(new_CE):
+        
+        def left_true(item):
+            if item.right == None or item.right.true(new_CE):
                 return True
+                
+            #See if we can bind it
+            unbound_right = item.right.unbound(set())
+            if len(unbound_right) > 0:
+                raise ValueError("NOT IMPLEMENTED")
+        
+        #Check if we can satisfy this without doing unification
+        if item in self.left:
+            if left_true(self):
+                return True
+                
+        else:
+            #Try binding each value to what we want to find and see if it works
+            unbound = self.left.unbound(set())
+            for variable in unbound:
+                if len(item.args) == 1:
+                    new = self.unify(variable, item.args[0])
+                    if item in new.left:
+                        if left_true(new):
+                            return True
+                        
+                else:
+                    raise ValueError("Not implemented")
+            
+        #Ok, figure out what we can bind
+        unbound = self.unbound(set())
+        if len(unbound) == 0:
+            return False
+         
+                
         return False
         
     def __hash__(self):
         return hash(self.left) + hash(self.right)
         
+# PY.TEST tests
+    
+
 def test_Statement():
     test = ['A(b):.','A(X):B(X),C(X)', 'A(X),B(X):C(X),D(d)']
     for state in test:
-        Statement(state)
+        assert Statement(state)
     
 def test_True():
-
     CE = set()
     CE.add( Statement('A(b):.'))
     CE.add(Statement('A(c):A(b)'))
     assert Statement('A(b):.').true(Predicate('A(b)'), CE)
     assert Statement('A(c):A(b)').true(Predicate('A(c)'), CE)
     
+def test_unify():
+    test_pred = Predicate('A(X)')
+    new = test_pred.unify(Variable('X'), Atom('a'))
+    assert new.args[0] == Atom('a')
+
+    test_stat = Statement('A(X):.')
+    new = test_stat.unify(Variable('X'), Atom('a'))
+    assert new.left.args[0] == Atom('a')
+    assert new.true(Predicate('A(a)'), set())
+
+    CE = set()
+    CE.add( Statement('A(b):.'))
+    CE.add(Statement('A(X):A(b)'))
+    #assert Search.search_true(CE, Predicate('A(c)'))
     
 def test_search():
     CE = set()

@@ -22,6 +22,7 @@ class Prolog_Plus(cmd.Cmd):
             
         try:
             self.CE.add(Types.Statement(line))
+            print 'Accepted'
         except:
             print traceback.format_exc()
     
