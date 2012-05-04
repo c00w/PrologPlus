@@ -24,16 +24,14 @@ class Predicate():
         
     def unify(self, mapping):
         
-        new_self = copy(self)
+        new_self = deepcopy(self)
         for i in range(len(self.args)):
             new_self.args[i] = self.args[i].unify(mapping)
-            
-        print self.args, new_self.args
         return new_self
         
     
     def true(self, CE):
-        print 'Searching for %s' % self
+        #print 'Searching for %s' % self
         return Search.search_true(CE, self)
         
     def determines(self, other):
@@ -85,7 +83,7 @@ class Atom(Predicate):
         return type(self) == type(other) and self.name == other.name and self.args == other.args
         
     def unify(self, mapping):
-        return self
+        return deepcopy(self)
     
     def __ne__(self, other):
         return not self.__eq__(other)
@@ -100,8 +98,8 @@ class Variable():
         
     def unify(self, mapping):
         if self in mapping:
-            return mapping[self]
-        return self
+            return deepcopy(mapping[self])
+        return deepcopy(self)
     
     def __eq__(self, other):
         return type(self) == type(other) and self.name == other.name
@@ -124,7 +122,7 @@ class Disjunction():
         return None
         
     def unify(self, mapping):
-        new_self = copy(self)
+        new_self = deepcopy(self)
         new_self.left = self.left.unify(mapping)
         new_self.right = self.right.unify(mapping)
         return new_self
@@ -136,7 +134,6 @@ class Disjunction():
         if other is None:
             return False
         return type(self) == type(other) and self.left == other.left and self.right == other.right
-        
     
     def __ne__(self, other):
         return not self.__eq__(other)
@@ -159,13 +156,13 @@ class Conjunction():
             return None
         value = []
         if left is not None:
-            value.append(left)
+            value.extend(left)
         if right is not None:
-            value.append(right)
+            value.extend(right)
         return value
         
     def unify(self, mapping):
-        new_self = copy(self)
+        new_self = deepcopy(self)
         new_self.left = self.left.unify(mapping)
         new_self.right = self.right.unify(mapping)
         return new_self
@@ -195,15 +192,6 @@ class Statement():
             
     def determines(self, item):
         return self.left.determines(item)
-        
-            
-    def unbound(self, head):
-        assert head != None
-        head = self.left.unbound(head)
-        assert head != None
-        head = self.right.unbound(head) if self.right else head
-        assert head != None
-        return head
 
     def __repr__(self):
         return '<Statement ' + str(self.left) + ':' + str(self.right) + ' >'
@@ -212,7 +200,7 @@ class Statement():
         return hash(self.left) + hash(self.right)
         
     def unify(self, mapping):
-        new_self = copy(self)
+        new_self = deepcopy(self)
         new_self.left = self.left.unify(mapping)
         if self.right is not None:
             new_self.right = self.right.unify(mapping)
@@ -242,6 +230,12 @@ def test_unify():
         assert len(mapping) > 0
         for item in mapping:
             assert state.unify(item) != state
-        
-
+            
+def test_unify_big():
+    import Parser
+    source = "A(X):."
+    CE = Parser._parse(source)
+    for state in CE:
+        assert str(state.unify({Variable("X"):Atom("a")})) != str(state)
+    
     
