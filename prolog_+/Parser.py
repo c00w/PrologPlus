@@ -33,15 +33,15 @@ def count(source):
 def _parse_term(source):
     if ',' in source and count(source[:source.index(',')]) == 0 and count(source[source.index(',')+1:]) == 0:
         return _parse_conj(source)
-    elif '|' in source:
+    elif '|' in source and count(source[:source.index('|')]) == 0 and count(source[source.index('|')+1:]) == 0:
         return _parse_disj(source)
     else:
         return _parse_pred(source)
         
 def _parse_conj(source):
-    if source[0] == '(':
-        left = source[1:source.index(')')]
-        right = source[source.index(')')+1:]
+    if source[0] == '[':
+        left = source[1:source.index(']')]
+        right = source[source.index(']')+1:]
     else:
         left, right = source.split(',', 1)
     
@@ -50,9 +50,9 @@ def _parse_conj(source):
     return Conjunction(left, right)
     
 def _parse_disj(source):
-    if source[0] == '(':
-        left = source[1:source.index(')')]
-        right = source[source.index(')')+1:]
+    if source[0] == '[':
+        left = source[1:source.index(']')]
+        right = source[source.index(']')+1:]
     else:
         left, right = source.split('|', 1)
     
