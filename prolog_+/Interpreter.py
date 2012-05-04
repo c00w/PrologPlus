@@ -1,6 +1,7 @@
 import cmd
 import Types
 import Search
+import Parser
 import traceback
 
 class Prolog_Plus(cmd.Cmd):
@@ -17,7 +18,7 @@ class Prolog_Plus(cmd.Cmd):
             return
             
         if line[-1] == '?':
-            print Search.search(self.CE, Types.Predicate(line[:-1]))
+            print Search.search(self.CE, parser._parse_pred(line[:-1]))
             return
             
         try:

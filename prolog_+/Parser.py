@@ -103,5 +103,4 @@ def test_Statement():
     test = ['A(b):.','A(X):B(X),C(X).', 'A(X),B(X):C(X),D(d).']
     for state in test:
         assert _parse(state)
-        print _parse(state)
     
