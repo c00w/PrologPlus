@@ -25,6 +25,7 @@ class Predicate():
     def unify(self, mapping):
         
         new_self = deepcopy(self)
+        assert new_self == self
         for i in range(len(self.args)):
             new_self.args[i] = self.args[i].unify(mapping)
         return new_self
@@ -83,7 +84,9 @@ class Atom(Predicate):
         return type(self) == type(other) and self.name == other.name and self.args == other.args
         
     def unify(self, mapping):
-        return deepcopy(self)
+        new = deepcopy(self)
+        assert new == self
+        return new
     
     def __ne__(self, other):
         return not self.__eq__(other)
@@ -173,7 +176,7 @@ class Conjunction():
     def __eq__(self, other):
         if other is None:
             return False
-        return self.left == other.item and self.right == other.tail
+        return type(self) == type(other) and self.left == other.left and self.right == other.right
         
     
     def __ne__(self, other):
@@ -214,6 +217,12 @@ class Statement():
             return True
         return False
         
+    def __eq__(self, other):
+        return self.left == other.left and self.right == other.right
+    
+    def __ne_(self, other):
+        return not self.__eq__(self, other)
+        
 def test_determines():
     import Parser
     source = "A(a):."
@@ -230,6 +239,13 @@ def test_unify():
         assert len(mapping) > 0
         for item in mapping:
             assert state.unify(item) != state
+            
+def test_statement_set_membership():
+    import Parser
+    source = "A(a):A(a)."
+    CE = Parser._parse(source)
+    state = Parser._parse_statement("A(a):A(a).")
+    assert state in CE
             
 def test_unify_big():
     import Parser

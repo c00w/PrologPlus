@@ -11,7 +11,7 @@ def search(CE, term):
 def find_unify(Pred, Statement):
     return Statement.find_unify()
 
-def search_true(CE, Pred, skip = None):
+def search_true(CE, Pred):
     poss = []
     for Statement in CE:
         det = Statement.determines(Pred)
@@ -21,24 +21,30 @@ def search_true(CE, Pred, skip = None):
     
     for state, mapping in poss:
         if mapping == {}:
-            if state.true(CE):
+            nCE = deepcopy(CE)
+            if state in nCE:
+                nCE.remove(state)
+           # print nCE, CE, state
+            if state.true(nCE):
                 return True
         
     for state, mapping in poss:
         if mapping != {}:
             new_state = state.unify(mapping)
-            if new_state in CE:
-                continue
-            if new_state.true(CE):
+            nCE = deepcopy(CE)
+            if state in nCE:
+                nCE.remove(state)
+            #print nCE, CE, state
+            if new_state.true(nCE):
                 return True
         
     return False
     
-#def test_recurse():
-#    import Parser
-#    source = "A(a):A(a)."
-#    CE = Parser._parse(source)
-#    assert search(CE, Parser._parse_pred('A(a)')) == 'Unknown'
+def test_recurse():
+    import Parser
+    source = "A(a):A(a)."
+    CE = Parser._parse(source)
+    assert search(CE, Parser._parse_pred('A(a)')) == 'Unknown'
     
 def test_search():
     import Parser
