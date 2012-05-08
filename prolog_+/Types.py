@@ -22,6 +22,13 @@ class Predicate():
         self.name = name
         self.args = args
         
+    def hasVariables(self):
+        for item in self.args:
+            if isinstance(item, Variable):
+                return True
+                
+        return False
+        
     def unify(self, mapping):
         
         new_self = deepcopy(self)
@@ -287,4 +294,12 @@ def test_unify_big():
     for state in CE:
         assert str(state.unify({Variable("X"):Atom("a")})) != str(state)
     
+def test_hasVariables():
+    import Parser
+    pred = "A(X,a,b,c)"
+    predf = "A(a,d,e)"
+    pred = Parser._parse_pred(pred)
+    predf = Parser._parse_pred(predf)
+    assert pred.hasVariables() == True
+    assert predf.hasVariables() == False
     
