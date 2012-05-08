@@ -10,14 +10,18 @@ def search(CE, term):
     
 def find_unify(Pred, Statement):
     return Statement.find_unify()
-
-def search_true(CE, Pred):
+    
+def determination_list(CE, Pred):
     poss = []
     for Statement in CE:
         det = Statement.determines(Pred)
         if det is not None:
             for mapping in det:
                 poss.append((Statement, mapping))
+    return poss
+
+def search_true(CE, Pred, return_mapping=False):
+    poss = determination_list(CE, Pred)
     
     for state, mapping in poss:
         if mapping == {}:
@@ -26,6 +30,8 @@ def search_true(CE, Pred):
                 nCE.remove(state)
            # print nCE, CE, state
             if state.true(nCE):
+                if return_mapping:
+                    return mapping
                 return True
         
     for state, mapping in poss:
@@ -36,6 +42,8 @@ def search_true(CE, Pred):
                 nCE.remove(state)
             #print nCE, CE, state
             if new_state.true(nCE):
+                if return_mapping:
+                    return mapping
                 return True
         
     return False
@@ -96,6 +104,21 @@ def test_search_compl_neg():
     
     assert search(CE, Pred) == True
     
+def test_search_unknown_not_true():
+    import Parser
+    source = "A(X):B(X).\n A(c):."
+    Pred = Parser._parse_pred('A(a)')
+    CE = Parser._parse(source)
+    assert search(CE, Pred) == 'Unknown'
+    
+def test_search_and_unify():
+    import Parser
+    source = "A(a):B(X),C(X).\nB(c):.\nC(d):."
+    Pred = Parser._parse_pred('A(a)')
+    CE = Parser._parse(source)
+    assert search(CE, Pred) is not True
+    assert search(CE, Pred) is not False
+    
 def test_search_time():
     import Parser
     source = "A(X):B(b)|C(X).\nB(b):."
@@ -137,6 +160,8 @@ def test_search_chaining_sub():
     assert search(CE, Parser._parse_pred('!C(a)')) == False
     assert search(CE, Parser._parse_pred('C(b)')) == 'Unknown'
     assert search(CE, Parser._parse_pred('!C(b)')) == 'Unknown'
+    
+
     
     
     

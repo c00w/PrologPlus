@@ -31,9 +31,33 @@ class Predicate():
         return new_self
         
     
-    def true(self, CE):
-        #print 'Searching for %s' % self
-        return Search.search_true(CE, self) is True
+    def true(self, CE, mapping_list):
+        assert len(mapping_list) >0
+        
+        nmapping_list = []
+        for mapping in mapping_list:
+            new_self = deepcopy(self)
+            assert new_self == self
+            for i in range(len(self.args)):
+                new_self.args[i] = self.args[i].unify(mapping)
+                
+            #print 'Searching for %s' % self
+            if len(Search.determination_list(CE, new_self)) == 0:
+                continue
+            
+            if Search.search_true(CE, self) is True:
+                nmapping_uf = Search.search_true(CE, self, return_mapping=True)
+                nmapping = {}
+                for a,b in nmapping_uf.items():
+                    print a,b
+                    if isinstance(a, Atom):
+                        nmapping[b]=a
+                    else:
+                        nmapping[a]=b
+                        
+                nmapping_list.append(dict(mapping.items() + nmapping.items()))
+        print self, mapping_list, nmapping_list
+        return len(nmapping_list) > 0, nmapping_list
         
     def determines(self, other):
         if other is None:
@@ -130,8 +154,14 @@ class Disjunction():
         new_self.right = self.right.unify(mapping)
         return new_self
     
-    def true(self, CE):
-        return self.left.true(CE) or self.right.true(CE)
+    def true(self, CE, mapping):
+        val, nmapping = self.left.true(CE, mapping) 
+        if val == True:
+            return True, nmapping
+            
+        val, mapping = self.right.true(CE, mapping)
+        
+        return val, mapping
     
     def __eq__(self, other):
         if other is None:
@@ -170,8 +200,12 @@ class Conjunction():
         new_self.right = self.right.unify(mapping)
         return new_self
         
-    def true(self, CE):
-        return self.left.true(CE) and self.right.true(CE)
+    def true(self, CE, mapping):
+        val, mapping = self.left.true(CE, mapping) 
+        if val != True:
+            return False, mapping
+        val, mapping = self.right.true(CE, mapping)
+        return val, mapping
         
     def __eq__(self, other):
         if other is None:
@@ -213,9 +247,8 @@ class Statement():
         if self.right == None:
             return True
         
-        if self.right.true(CE):
-            return True
-        return False
+        val, mapping = self.right.true(CE, [{}])
+        return val
         
     def __eq__(self, other):
         return self.left == other.left and self.right == other.right

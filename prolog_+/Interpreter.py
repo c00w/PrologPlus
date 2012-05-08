@@ -27,7 +27,6 @@ class Prolog_Plus(cmd.Cmd):
         except:
             print traceback.format_exc()
     
-        
     def do_EOF(self, line):
         print 'EOF'
         return True
