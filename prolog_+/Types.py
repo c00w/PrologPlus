@@ -33,7 +33,7 @@ class Predicate():
     
     def true(self, CE):
         #print 'Searching for %s' % self
-        return Search.search_true(CE, self)
+        return Search.search_true(CE, self) is True
         
     def determines(self, other):
         if other is None:
