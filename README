@@ -1,0 +1,81 @@
+Prolog + by Colin Rice
+
+This is an extended prolog language interpreter. It supports, ors, ands, and negations
+
+Installation:
+-----------------------
+We need a working installation of python2.7. On linux you run sudo apt-get install python27. On windows it's a download on python.org. You want the 2.7.3 version (Although any 2.7 version will work)
+
+Basic Usage:
+---------------------
+From the command line run:
+python prolog_+ Interpreter.py
+On windows double click the Interpreter.py file.
+
+Allowed Statements:
+----------------------
+You can use almost all of the features of normal prolog.
+EX:
+
+A(a):.
+>>>A(a)?
+True
+>>>dump
+<Statement Predicate(A, Variable("A")):None >
+
+A(a):.
+B(X):A(X).
+>>>B(a)?
+True
+
+You can also use negations.
+
+A(a):.
+B(X):A(X).
+>>>!B(a)?
+False
+
+!A(a):.
+B(X):!A(X).
+>>>B(a)?
+True
+
+Other supported features are or statements.
+
+A(a):.
+B(X):A(X)|C(X).
+>>>B(a)?
+True
+
+And and statements in the head.
+A(a):.
+B(X),C(x):A(X).
+>>>B(a)?
+True
+>>>C(a)?
+True
+
+Syntax:
+---------
+Variables start with a capitol letter, atoms with a lower letter.
+Predicate names start with a capitol letter.
+
+Known Bugs:
+------------
+If you use or statements in the head they should be rewritten as follows:
+A(X) | B(X) : C(X).
+to:
+A(X):C(X),!B(X)
+B(X):C(X),!A(X)
+
+They currently are not. They are just ignored.
+
+The following statement works:
+A(a):.
+B(b):.
+C(d):A(X),B(X).
+>>>C(d)?
+True
+
+
+To run the test cases
