@@ -111,6 +111,11 @@ def test_search_unknown_not_true():
     CE = Parser._parse(source)
     assert search(CE, Pred) == 'Unknown'
     
+    source = "A(a):B(X).\n A(c):."
+    Pred = Parser._parse_pred('A(a)')
+    CE = Parser._parse(source)
+    assert search(CE, Pred) == 'Unknown'
+    
 def test_search_and_unify():
     import Parser
     source = "A(a):B(X),C(X).\nB(c):.\nC(d):."
