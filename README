@@ -55,6 +55,13 @@ True
 >>>C(a)?
 True
 
+The bug I showed in the presentation is fixed.
+A(a):.
+B(b):.
+C(d):A(X),B(X).
+>>>C(d)?
+Unknown
+
 Syntax:
 ---------
 Variables start with a capitol letter, atoms with a lower letter.
@@ -63,19 +70,15 @@ Predicate names start with a capitol letter.
 Known Bugs:
 ------------
 If you use or statements in the head they should be rewritten as follows:
-A(X) | B(X) : C(X).
+A(X)|B(X):C(X).
 to:
 A(X):C(X),!B(X)
 B(X):C(X),!A(X)
 
-They currently are not. They are just ignored.
+They currently are not. They are just left in the database as:
+A(X)|B(X):C(X).
 
-The following statement works:
-A(a):.
-B(b):.
-C(d):A(X),B(X).
->>>C(d)?
-True
-
-
-To run the test cases
+To run the test cases do:
+-------------------------
+pip install py.test
+py.test prolog_+/*.py

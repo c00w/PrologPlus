@@ -49,14 +49,14 @@ class Predicate():
                 nmapping_uf = Search.search_true(CE, self, return_mapping=True)
                 nmapping = {}
                 for a,b in nmapping_uf.items():
-                    print a,b
+                    #print a,b
                     if isinstance(a, Atom):
                         nmapping[b]=a
                     else:
                         nmapping[a]=b
                         
                 nmapping_list.append(dict(mapping.items() + nmapping.items()))
-        print self, mapping_list, nmapping_list
+        #print self, mapping_list, nmapping_list
         return len(nmapping_list) > 0, nmapping_list
         
     def determines(self, other):

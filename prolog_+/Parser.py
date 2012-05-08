@@ -7,8 +7,8 @@ def _parse(lines):
     return CE
     
 def _parse_statement(source):
-    source.replace("\t", "")
-    source.replace(" ", "")
+    source = source.replace("\t", "")
+    source = source.replace(" ", "")
     
     if ':' not in source or '.' not in source:
         raise SyntaxError(": or . not in line:%s" % source)
