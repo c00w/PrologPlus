@@ -118,6 +118,13 @@ def test_search_and_unify():
     CE = Parser._parse(source)
     assert search(CE, Pred) is not True
     assert search(CE, Pred) is not False
+    assert search(CE, Pred) == 'Unknown'
+    
+    source = "A(a):B(X),C(X).\nB(c):.\nC(c):."
+    Pred = Parser._parse_pred('A(a)')
+    CE = Parser._parse(source)
+    assert search(CE, Pred) is True
+    
     
 def test_search_time():
     import Parser
