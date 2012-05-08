@@ -6,7 +6,7 @@ import traceback
 
 class Prolog_Plus(cmd.Cmd):
     """Simple command processor example."""
-    prompt="prolog+>"
+    prompt="Prolog+>>"
     CE = set()
     
     def do_dump(self, line):
@@ -33,4 +33,6 @@ class Prolog_Plus(cmd.Cmd):
         return True
 
 if __name__ == '__main__':
+    print "Prolog+ By Colin Rice"
+    print "-" * 40
     Prolog_Plus().cmdloop()
