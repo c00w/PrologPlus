@@ -339,7 +339,6 @@ class Equation():
         mapping = {}
         for var in self.determines(variable):
             search_result = Search.search_expr(CE, var)
-            print search_result
             if search_result is not None and len(search_result):
                 mapping[var] = search_result[0]
             else:
@@ -347,16 +346,10 @@ class Equation():
         if len(mapping) != len(self.determines(variable)):
             return None
 
-        print 'Starting sub'
-        print 'mapping'
-        print mapping
-        print 'eqns'
         new_eqn = self.equation
         while len(new_eqn.free_symbols)> 1:
             for var, value in mapping.iteritems():
                 new_eqn = new_eqn.subs(var, value)
-                print new_eqn
-        print
 
         return solve(new_eqn, variable, dict=False)
 
