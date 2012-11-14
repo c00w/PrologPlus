@@ -7,9 +7,17 @@ def _parse(lines):
     return CE
     
 def _parse_statement(source):
+
     source = source.replace("\t", "")
     source = source.replace(" ", "")
-    
+
+    if '=|' in source:
+        lhs, rhs = source.split('=|', 1)
+        lhs = _parse_term(lhs)
+        rhs = float(rhs)
+        lhs.probability = rhs
+        return Statement(lhs, None)
+
     if ':' not in source or '.' not in source:
         raise SyntaxError(": or . not in line:%s" % source)
     lhs, rhs = source.split(":", 1)
