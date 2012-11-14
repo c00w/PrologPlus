@@ -325,6 +325,11 @@ class Equation():
         if '=' in equation:
             equation = equation.split('=', 1)[1] + '-' + equation.split('=', 1)[0]
         self.equation = parse_expr(equation)
+    def __eq__(self, other):
+        return self.equation == other.equation
+
+    def __hash__(self):
+        return hash(self.equation)
 
     def determines(self, other):
         if self.equation.has(other):
@@ -334,19 +339,32 @@ class Equation():
         mapping = {}
         for var in self.determines(variable):
             search_result = Search.search_expr(CE, var)
+            print search_result
             if search_result is not None and len(search_result):
-                mapping[var] = search_result[0][var]
+                mapping[var] = search_result[0]
             else:
                 break
         if len(mapping) != len(self.determines(variable)):
             return None
 
+        print 'Starting sub'
+        print 'mapping'
+        print mapping
+        print 'eqns'
         new_eqn = self.equation
-        for var, value in mapping.iteritems():
-            new_eqn = new_eqn.subs(var, value)
+        while len(new_eqn.free_symbols)> 1:
+            for var, value in mapping.iteritems():
+                new_eqn = new_eqn.subs(var, value)
+                print new_eqn
+        print
 
-        return solve(self.equation, variable, dict=True)
+        return solve(new_eqn, variable, dict=False)
 
 def test_equation():
     a = Equation('x+y**2-1')
     assert len(a.determines('x')) == 1
+
+def test_solve():
+    a = parse_expr('x-y-24')
+    a = a.subs('x', 24)
+    assert solve(a, 'y') == [0]

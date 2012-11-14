@@ -14,7 +14,7 @@ def search_expr(CE, var):
     usefull = [eqn for eqn in CE if eqn.determines(var) != None]
     usefull.sort(key=lambda x:len(x.determines(var)))
     for eqn in usefull:
-        new_ce = copy(CE)
+        new_ce = deepcopy(CE)
         new_ce.remove(eqn)
         result = eqn.solve(var, new_ce)
         if result:
@@ -187,6 +187,14 @@ def test_search_chaining_sub():
     assert search(CE, Parser._parse_pred('C(b)')) == 'Unknown'
     assert search(CE, Parser._parse_pred('!C(b)')) == 'Unknown'
 
+def test_expr_search_simple():
+    import Parser
+    import sympy
+    source = ":x=24"
+
+    CE = Parser._parse(source)
+    assert search_expr(CE, sympy.Symbol('x'))[0] == 24
+
 def test_expr_search():
     import Parser
     import sympy
@@ -197,3 +205,4 @@ def test_expr_search():
     assert search_expr(CE, sympy.Symbol('x'))
     assert search_expr(CE, sympy.Symbol('y'))
     assert search_expr(CE, sympy.Symbol('z'))
+    assert float(search_expr(CE, sympy.Symbol('z'))[0]) == 1305
