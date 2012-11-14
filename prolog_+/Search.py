@@ -1,4 +1,4 @@
-from copy import deepcopy
+from copy import deepcopy, copy
 
 def search(CE, term):
     prob = search_true(CE, term)
@@ -9,6 +9,17 @@ def search(CE, term):
     if prob is not None:
         return 1.0 - prob
     return 'Unknown'
+
+def search_expr(CE, var):
+    usefull = [eqn for eqn in CE if eqn.determines(var) != None]
+    usefull.sort(key=lambda x:len(x.determines(var)))
+    for eqn in usefull:
+        new_ce = copy(CE)
+        new_ce.remove(eqn)
+        result = eqn.solve(var, new_ce)
+        if result:
+            return result
+    return None
 
 def find_unify(Pred, Statement):
     return Statement.find_unify()
@@ -176,3 +187,13 @@ def test_search_chaining_sub():
     assert search(CE, Parser._parse_pred('C(b)')) == 'Unknown'
     assert search(CE, Parser._parse_pred('!C(b)')) == 'Unknown'
 
+def test_expr_search():
+    import Parser
+    import sympy
+    source=":x=24\n:y=x+3\n:z=x**2+y**2"
+
+    CE = Parser._parse(source)
+
+    assert search_expr(CE, sympy.Symbol('x'))
+    assert search_expr(CE, sympy.Symbol('y'))
+    assert search_expr(CE, sympy.Symbol('z'))

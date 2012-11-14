@@ -1,4 +1,4 @@
-from Types import Statement, Predicate, Variable, Atom, Conjunction, Disjunction, isvariable
+from Types import Statement, Predicate, Variable, Atom, Conjunction, Disjunction, isvariable, Equation
 
 def _parse(lines):
     CE = set()
@@ -10,6 +10,9 @@ def _parse_statement(source):
 
     source = source.replace("\t", "")
     source = source.replace(" ", "")
+
+    if ':' == source[0]:
+        return Equation(source[1:])
 
     if '=|' in source:
         lhs, rhs = source.split('=|', 1)
@@ -111,4 +114,7 @@ def test_Statement():
     test = ['A(b):.','A(X):B(X),C(X).', 'A(X),B(X):C(X),D(d).']
     for state in test:
         assert _parse(state)
-    
+def test_EQN():
+    test = [': x= x**2-36', ':y+x']
+    for state in test:
+        assert _parse(state)

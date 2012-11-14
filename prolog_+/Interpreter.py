@@ -3,6 +3,7 @@ import Types
 import Search
 import Parser
 import traceback
+import sympy
 
 class Prolog_Plus(cmd.Cmd):
     """Simple command processor example."""
@@ -16,8 +17,11 @@ class Prolog_Plus(cmd.Cmd):
     def default(self, line):
         if len(line) == 0:
             return
-            
-        if line[-1] == '?':
+    
+        if line[-2:] == '?n':
+            print Search.search_expr(self.CE, sympy.Symbol(line[:-2]))
+            return
+        elif line[-1] == '?':
             print Search.search(self.CE, Parser._parse_pred(line[:-1]))
             return
             

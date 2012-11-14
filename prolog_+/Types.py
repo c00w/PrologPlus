@@ -1,5 +1,7 @@
 from copy import copy, deepcopy
 import Search
+from sympy.parsing.sympy_parser import parse_expr
+from sympy.solvers import solve
 
 def isvariable(item):
     """
@@ -91,7 +93,6 @@ class Predicate():
             if self.args[i] != other.args[i]:
                 mapping[self.args[i]] = other.args[i]
         return [mapping]
-
 
     def __repr__(self):
         return 'Predicate(' + self.name +', ' + ', '.join(map(str, self.args)) + ')'
@@ -317,3 +318,35 @@ def test_hasVariables():
     assert pred.hasVariables() == True
     assert predf.hasVariables() == False
 
+class Equation():
+
+    def __init__(self, equation):
+        #If there is an equal sign in the equation do some basic fudgng
+        if '=' in equation:
+            equation = equation.split('=', 1)[1] + '-' + equation.split('=', 1)[0]
+        self.equation = parse_expr(equation)
+
+    def determines(self, other):
+        if self.equation.has(other):
+            return self.equation.subs(other, 0).free_symbols
+
+    def solve(self, variable, CE):
+        mapping = {}
+        for var in self.determines(variable):
+            search_result = Search.search_expr(CE, var)
+            if search_result is not None and len(search_result):
+                mapping[var] = search_result[0][var]
+            else:
+                break
+        if len(mapping) != len(self.determines(variable)):
+            return None
+
+        new_eqn = self.equation
+        for var, value in mapping.iteritems():
+            new_eqn = new_eqn.subs(var, value)
+
+        return solve(self.equation, variable, dict=True)
+
+def test_equation():
+    a = Equation('x+y**2-1')
+    assert len(a.determines('x')) == 1
