@@ -17,7 +17,7 @@ class Variable():
         assert isvariable(name)
         self.name = name
 
-    def unify(self, mapping):
+    def unify(self, mapping, CE):
         if self in mapping:
             return deepcopy(mapping[self])
         return deepcopy(self)
@@ -39,21 +39,24 @@ class Disjunction():
         self.left = left
         self.right = right
 
+    def set_prob(self, b):
+        pass
+
     def determines(self, other):
         return None
 
-    def unify(self, mapping):
+    def unify(self, mapping, CE):
         new_self = deepcopy(self)
-        new_self.left = self.left.unify(mapping)
-        new_self.right = self.right.unify(mapping)
+        new_self.left = self.left.unify(mapping, CE)
+        new_self.right = self.right.unify(mapping, CE)
         return new_self
 
-    def true(self, CE, mapping):
-        val, nmapping = self.left.true(CE, mapping)
+    def solutions(self, CE, mapping):
+        val, nmapping = self.left.solutions(CE, mapping)
         if val == True:
             return True, nmapping
 
-        val, mapping = self.right.true(CE, mapping)
+        val, mapping = self.right.solutions(CE, mapping)
 
         return val, mapping
 
@@ -79,6 +82,9 @@ class Conjunction():
         self.left = left
         self.right = right
 
+    def set_prob(self, p):
+        pass
+
     def determines(self, other):
         left = self.left.determines(other)
         right = self.right.determines(other)
@@ -91,17 +97,17 @@ class Conjunction():
             value.extend(right)
         return value
 
-    def unify(self, mapping):
+    def unify(self, mapping, CE):
         new_self = deepcopy(self)
-        new_self.left = self.left.unify(mapping)
-        new_self.right = self.right.unify(mapping)
+        new_self.left = self.left.unify(mapping, CE)
+        new_self.right = self.right.unify(mapping, CE)
         return new_self
 
-    def true(self, CE, mapping):
-        val, mapping = self.left.true(CE, mapping)
+    def solutions(self, CE, mapping):
+        val, mapping = self.left.solutions(CE, mapping)
         if val != True:
             return False, mapping
-        val, mapping = self.right.true(CE, mapping)
+        val, mapping = self.right.solutions(CE, mapping)
         return val, mapping
 
     def prob(self):
@@ -130,16 +136,19 @@ class Negation():
     def determines(self, other):
         return self.child.determines(other)
 
-    def unify(self, mapping):
+    def unify(self, mapping, CE):
         new_self = deepcopy(self)
-        new_self.child = self.child.unify(mapping)
+        new_self.child = self.child.unify(mapping, CE)
         return new_self
 
-    def true(self, CE, mapping):
-        val, mapping = self.child.true(CE, mapping)
-        return val, mapping
+    def solutions(self, CE, mapping):
+        return self.child.solutions(CE, mapping)
+
+    def set_prob(self, p):
+        self.child.set_prob(1-p)
 
     def prob(self):
+        print 'Negation Prob Called'
         return 1- self.child.prob()
 
     def __eq__(self, other):
@@ -151,10 +160,10 @@ class Negation():
         return not self.__eq__(other)
 
     def __repr__(self):
-        return 'Negation(' + str(self.child) +')'
+        return 'Negation(' + str(self.child) + ', p=' + str(self.prob()) + ')'
 
     def __hash__(self):
-        return hash(self.child) + 'Negation'
+        return hash(self.child) + hash('Negation')
 
 
 class Statement():
@@ -167,24 +176,29 @@ class Statement():
             return self.left.determines(item.child)
         return self.left.determines(item)
 
+    def update_prob(self):
+        if self.right:
+            self.left.set_prob(self.right.prob())
+
     def __repr__(self):
         return '<Statement ' + str(self.left) + ':' + str(self.right) + ' >'
 
     def __hash__(self):
         return hash(self.left) + hash(self.right)
 
-    def unify(self, mapping):
+    def unify(self, mapping, CE):
         new_self = deepcopy(self)
-        new_self.left = self.left.unify(mapping)
+        new_self.left = self.left.unify(mapping, CE)
         if self.right is not None:
-            new_self.right = self.right.unify(mapping)
+            new_self.right = self.right.unify(mapping, CE)
+            new_self.update_prob()
         return new_self
 
-    def true(self, CE):
+    def solutions(self, CE):
         if self.right == None:
             return True
 
-        val, mapping = self.right.true(CE, [{}])
+        val, mapping = self.right.solutions(CE, [{}])
         return val
 
     def prob(self):
@@ -205,6 +219,9 @@ class Predicate():
         self.args = args
         self.probability = prob
 
+    def set_prob(self, p):
+        self.probability = p
+
     def prob(self):
         return self.probability
 
@@ -215,16 +232,15 @@ class Predicate():
 
         return False
 
-    def unify(self, mapping):
-
+    def unify(self, mapping, CE):
         new_self = deepcopy(self)
         assert new_self == self
         for i in range(len(self.args)):
-            new_self.args[i] = self.args[i].unify(mapping)
+            new_self.args[i] = self.args[i].unify(mapping, CE)
         return new_self
 
 
-    def true(self, CE, mapping_list):
+    def solutions(self, CE, mapping_list):
         assert len(mapping_list) >0
 
         nmapping_list = []
@@ -232,14 +248,14 @@ class Predicate():
             new_self = deepcopy(self)
             assert new_self == self
             for i in range(len(self.args)):
-                new_self.args[i] = self.args[i].unify(mapping)
+                new_self.args[i] = self.args[i].unify(mapping, CE)
 
             #print 'Searching for %s' % self
             if len(Search.determination_list(CE, new_self)) == 0:
                 continue
 
-            if Search.search_true(CE, self) is not None:
-                nmapping_uf = Search.search_true(CE, self, return_mapping=True)
+            if Search.search_solutions(CE, self) is not None:
+                prob, nmapping_uf = Search.search_solutions(CE, self, return_mapping=True)
                 nmapping = {}
                 for a,b in nmapping_uf.items():
                     #print a,b
@@ -249,6 +265,7 @@ class Predicate():
                         nmapping[a]=b
 
                 nmapping_list.append(dict(mapping.items() + nmapping.items()))
+                self.probability = prob
         #print self, mapping_list, nmapping_list
         return len(nmapping_list) > 0, nmapping_list
 
@@ -272,7 +289,7 @@ class Predicate():
         return [mapping]
 
     def __repr__(self):
-        return 'Predicate(' + self.name +', ' + ', '.join(map(str, self.args)) + ')'
+        return 'Predicate(' + self.name +', ' + ', '.join(map(str, self.args)) + 'P=' + str(self.probability) + ')'
 
     def __eq__(self, other):
         if other is None:
@@ -297,7 +314,7 @@ class Atom(Predicate):
             return False
         return type(self) == type(other) and self.name == other.name and self.args == other.args
 
-    def unify(self, mapping):
+    def unify(self, mapping, CE):
         new = deepcopy(self)
         assert new == self
         return new
@@ -326,7 +343,7 @@ def test_unify():
         mapping = state.determines(Parser._parse_pred('A(a)'))
         assert len(mapping) > 0
         for item in mapping:
-            assert state.unify(item) != state
+            assert state.unify(item, CE) != state
 
 def test_statement_set_membership():
     import Parser
@@ -340,7 +357,7 @@ def test_unify_big():
     source = "A(X):."
     CE = Parser._parse(source)
     for state in CE:
-        assert str(state.unify({Variable("X"):Atom("a")})) != str(state)
+        assert str(state.unify({Variable("X"):Atom("a")}, CE)) != str(state)
 
 def test_hasVariables():
     import Parser

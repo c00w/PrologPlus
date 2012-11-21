@@ -18,7 +18,7 @@ def _parse_statement(source):
         lhs, rhs = source.split('=|', 1)
         lhs = _parse_term(lhs)
         rhs = float(rhs)
-        lhs.probability = rhs
+        lhs.set_prob(rhs)
         return Statement(lhs, None)
 
     if ':' not in source or '.' not in source:
@@ -72,16 +72,17 @@ def _parse_disj(source):
     return Disjunction(left, right)
 
 def _parse_item(source):
-    if '!' == source[0]:
-        return _parse_negation(source)
-    elif '(' in source:
+    if '(' in source:
         return _parse_pred(source)
-    elif isvariable(source):
+    if isvariable(source):
         return Variable(source)
     else:
         return Atom(source)
 
 def _parse_pred(source):
+    if '!' == source[0]:
+        return _parse_negation(source)
+
     if '(' not in source or ')' not in source:
         raise SyntaxError('( or ) not in predicate: %s' % source)
 
@@ -96,7 +97,7 @@ def _parse_pred(source):
 
 
 def _parse_negation(source):
-    return Negation(_parse_item(source[1:]))
+    return Negation(_parse_pred(source[1:]))
 
 # PY.TEST tests
 
