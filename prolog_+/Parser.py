@@ -1,4 +1,4 @@
-from Types import Statement, Predicate, Variable, Atom, Conjunction, Disjunction, isvariable, Equation
+from Types import Statement, Predicate, Variable, Atom, Conjunction, Disjunction, isvariable, Equation, Negation
 
 def _parse(lines):
     CE = set()
@@ -72,7 +72,9 @@ def _parse_disj(source):
     return Disjunction(left, right)
 
 def _parse_item(source):
-    if '(' in source:
+    if '!' == source[0]:
+        return _parse_negation(source)
+    elif '(' in source:
         return _parse_pred(source)
     elif isvariable(source):
         return Variable(source)
@@ -92,6 +94,9 @@ def _parse_pred(source):
     items = map(_parse_item, items)
     return Predicate(name, items)
 
+
+def _parse_negation(source):
+    return Negation(_parse_item(source[1:]))
 
 # PY.TEST tests
 

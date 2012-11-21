@@ -1,13 +1,10 @@
 from copy import deepcopy, copy
+from Types import Negation
 
 def search(CE, term):
     prob = search_true(CE, term)
     if prob is not None:
         return prob
-    term.negated = not term.negated
-    prob = search_true(CE, term)
-    if prob is not None:
-        return 1.0 - prob
     return 'Unknown'
 
 def search_expr(CE, var):
@@ -33,7 +30,16 @@ def determination_list(CE, Pred):
                 poss.append((Statement, mapping))
     return poss
 
-def search_true(CE, Pred, return_mapping=False):
+def search_true(CE, term, return_mapping=False):
+
+    if isinstance(term, Negation):
+        if return_mapping == False:
+            prob = search_true(CE, term.child)
+            return 1.0 - prob if prob is not None else None
+        else:
+            return search_true(CE, term.child, True)
+
+    Pred = term
     poss = determination_list(CE, Pred)
 
     for state, mapping in poss:
@@ -45,7 +51,7 @@ def search_true(CE, Pred, return_mapping=False):
             if state.true(nCE):
                 if return_mapping:
                     return mapping
-                return state.left.prob()
+                return state.prob()
 
     for state, mapping in poss:
         if mapping != {}:
@@ -57,7 +63,7 @@ def search_true(CE, Pred, return_mapping=False):
             if new_state.true(nCE):
                 if return_mapping:
                     return mapping
-                return state.left.prob()
+                return new_state.prob()
 
     return None
 
@@ -102,7 +108,7 @@ def test_search_compl_neg():
     import Parser
     source = "A(X):!B(b).\n!B(b):."
     Pred = Parser._parse_pred('A(a)')
-    b = Parser._parse_pred('!B(b)')
+    b = Parser._parse_item('!B(b)')
     CE = Parser._parse(source)
 
     assert search(CE, b) == 1.0
@@ -181,11 +187,11 @@ def test_search_chaining_sub():
             #print new_state
 
     assert search(CE, Parser._parse_pred('B(a)')) == 1.0
-    assert search(CE, Parser._parse_pred('!B(a)')) == 0.0
+    assert search(CE, Parser._parse_item('!B(a)')) == 0.0
     assert search(CE, Parser._parse_pred('C(a)')) == 1.0
-    assert search(CE, Parser._parse_pred('!C(a)')) == 0.0
+    assert search(CE, Parser._parse_item('!C(a)')) == 0.0
     assert search(CE, Parser._parse_pred('C(b)')) == 'Unknown'
-    assert search(CE, Parser._parse_pred('!C(b)')) == 'Unknown'
+    assert search(CE, Parser._parse_item('!C(b)')) == 'Unknown'
 
 def test_expr_search_simple():
     import Parser
@@ -206,3 +212,4 @@ def test_expr_search():
     assert search_expr(CE, sympy.Symbol('y'))
     assert search_expr(CE, sympy.Symbol('z'))
     assert float(search_expr(CE, sympy.Symbol('z'))[0]) == 1305
+

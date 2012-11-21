@@ -1,5 +1,4 @@
 from copy import copy, deepcopy
-import Search
 from sympy.parsing.sympy_parser import parse_expr
 from sympy.solvers import solve
 
@@ -12,127 +11,6 @@ def isvariable(item):
         assert len(item) > 1
         return item[1].upper() == item[1]
     return item[0].upper() == item[0]
-
-class Predicate():
-    def __init__(self, name, args, prob=1.):
-        name = name.replace('!!','')
-        if name[0] == '!':
-            name = name[1:]
-            self.negated = True
-        else:
-            self.negated = False
-        self.name = name
-        self.args = args
-        self.probability = prob
-
-    def prob(self):
-        return self.probability
-
-    def hasVariables(self):
-        for item in self.args:
-            if isinstance(item, Variable):
-                return True
-
-        return False
-
-    def unify(self, mapping):
-
-        new_self = deepcopy(self)
-        assert new_self == self
-        for i in range(len(self.args)):
-            new_self.args[i] = self.args[i].unify(mapping)
-        return new_self
-
-
-    def true(self, CE, mapping_list):
-        assert len(mapping_list) >0
-
-        nmapping_list = []
-        for mapping in mapping_list:
-            new_self = deepcopy(self)
-            assert new_self == self
-            for i in range(len(self.args)):
-                new_self.args[i] = self.args[i].unify(mapping)
-
-            #print 'Searching for %s' % self
-            if len(Search.determination_list(CE, new_self)) == 0:
-                continue
-
-            if Search.search_true(CE, self) is not None:
-                nmapping_uf = Search.search_true(CE, self, return_mapping=True)
-                nmapping = {}
-                for a,b in nmapping_uf.items():
-                    #print a,b
-                    if isinstance(a, Atom):
-                        nmapping[b]=a
-                    else:
-                        nmapping[a]=b
-
-                nmapping_list.append(dict(mapping.items() + nmapping.items()))
-        #print self, mapping_list, nmapping_list
-        return len(nmapping_list) > 0, nmapping_list
-
-    def determines(self, other):
-        if other is None:
-            return None
-
-        if self.name != other.name:
-            return None
-
-        if len(self.args) != len(other.args):
-            return None
-
-        if self.negated != other.negated:
-            return None
-
-        mapping = {}
-        for i in range(len(self.args)):
-
-            if self.args[i] != other.args[i] and not isinstance(self.args[i], Variable) and not isinstance(other.args[i], Variable):
-                return None
-            if self.args[i] != other.args[i]:
-                mapping[self.args[i]] = other.args[i]
-        return [mapping]
-
-    def __repr__(self):
-        return 'Predicate(' + self.name +', ' + ', '.join(map(str, self.args)) + ')'
-
-    def __eq__(self, other):
-        if other is None:
-            return False
-        return type(self) == type(other) and self.name == other.name and self.args == other.args
-
-    def __ne__(self, other):
-        return not self.__eq__(other)
-
-    def __hash__(self):
-        return hash(self.name) + sum(map(hash, self.args)) + hash('PREDICATE')
-
-class Atom(Predicate):
-    def __init__(self, name, prob = 1.):
-        assert not isvariable(name)
-        self.name = name
-        self.args = []
-        self.probability = prob
-
-    def __eq__(self, other):
-        if other is None:
-            return False
-        return type(self) == type(other) and self.name == other.name and self.args == other.args
-
-    def unify(self, mapping):
-        new = deepcopy(self)
-        assert new == self
-        return new
-
-    def prob(self):
-        return self.probability
-
-    def __ne__(self, other):
-        return not self.__eq__(other)
-
-    def __repr__(self):
-        return 'Atom("' + self.name + '")'
 
 class Variable():
     def __init__(self, name):
@@ -244,12 +122,49 @@ class Conjunction():
     def __hash__(self):
         return hash(self.left) + hash(self.right) + hash('CONJUNCTION::')
 
+class Negation():
+    def __init__(self, child):
+        self.child = child
+        self.name = self.child.name
+
+    def determines(self, other):
+        return self.child.determines(other)
+
+    def unify(self, mapping):
+        new_self = deepcopy(self)
+        new_self.child = self.child.unify(mapping)
+        return new_self
+
+    def true(self, CE, mapping):
+        val, mapping = self.child.true(CE, mapping)
+        return val, mapping
+
+    def prob(self):
+        return 1- self.child.prob()
+
+    def __eq__(self, other):
+        if other is None:
+            return False
+        return type(self) == type(other) and self.child == other.child
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
+
+    def __repr__(self):
+        return 'Negation(' + str(self.child) +')'
+
+    def __hash__(self):
+        return hash(self.child) + 'Negation'
+
+
 class Statement():
     def __init__(self, left, right):
         self.left = left
         self.right = right
 
     def determines(self, item):
+        if isinstance(item, Negation):
+            return self.left.determines(item.child)
         return self.left.determines(item)
 
     def __repr__(self):
@@ -272,11 +187,129 @@ class Statement():
         val, mapping = self.right.true(CE, [{}])
         return val
 
+    def prob(self):
+        return self.left.prob() if self.left else self.right.prob()
+
     def __eq__(self, other):
         return self.left == other.left and self.right == other.right
 
     def __ne_(self, other):
         return not self.__eq__(self, other)
+
+import Search
+
+class Predicate():
+    def __init__(self, name, args, prob=1.):
+        name = name.replace('!!','')
+        self.name = name
+        self.args = args
+        self.probability = prob
+
+    def prob(self):
+        return self.probability
+
+    def hasVariables(self):
+        for item in self.args:
+            if isinstance(item, Variable):
+                return True
+
+        return False
+
+    def unify(self, mapping):
+
+        new_self = deepcopy(self)
+        assert new_self == self
+        for i in range(len(self.args)):
+            new_self.args[i] = self.args[i].unify(mapping)
+        return new_self
+
+
+    def true(self, CE, mapping_list):
+        assert len(mapping_list) >0
+
+        nmapping_list = []
+        for mapping in mapping_list:
+            new_self = deepcopy(self)
+            assert new_self == self
+            for i in range(len(self.args)):
+                new_self.args[i] = self.args[i].unify(mapping)
+
+            #print 'Searching for %s' % self
+            if len(Search.determination_list(CE, new_self)) == 0:
+                continue
+
+            if Search.search_true(CE, self) is not None:
+                nmapping_uf = Search.search_true(CE, self, return_mapping=True)
+                nmapping = {}
+                for a,b in nmapping_uf.items():
+                    #print a,b
+                    if isinstance(a, Atom):
+                        nmapping[b]=a
+                    else:
+                        nmapping[a]=b
+
+                nmapping_list.append(dict(mapping.items() + nmapping.items()))
+        #print self, mapping_list, nmapping_list
+        return len(nmapping_list) > 0, nmapping_list
+
+    def determines(self, other):
+        if other is None:
+            return None
+
+        if self.name != other.name:
+            return None
+
+        if len(self.args) != len(other.args):
+            return None
+
+        mapping = {}
+        for i in range(len(self.args)):
+
+            if self.args[i] != other.args[i] and not isinstance(self.args[i], Variable) and not isinstance(other.args[i], Variable):
+                return None
+            if self.args[i] != other.args[i]:
+                mapping[self.args[i]] = other.args[i]
+        return [mapping]
+
+    def __repr__(self):
+        return 'Predicate(' + self.name +', ' + ', '.join(map(str, self.args)) + ')'
+
+    def __eq__(self, other):
+        if other is None:
+            return False
+        return type(self) == type(other) and self.name == other.name and self.args == other.args
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
+
+    def __hash__(self):
+        return hash(self.name) + sum(map(hash, self.args)) + hash('PREDICATE')
+
+class Atom(Predicate):
+    def __init__(self, name, prob = 1.):
+        assert not isvariable(name)
+        self.name = name
+        self.args = []
+        self.probability = prob
+
+    def __eq__(self, other):
+        if other is None:
+            return False
+        return type(self) == type(other) and self.name == other.name and self.args == other.args
+
+    def unify(self, mapping):
+        new = deepcopy(self)
+        assert new == self
+        return new
+
+    def prob(self):
+        return self.probability
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
+
+    def __repr__(self):
+        return 'Atom("' + self.name + '")'
 
 def test_determines():
     import Parser
@@ -361,3 +394,9 @@ def test_solve():
     a = parse_expr('x-y-24')
     a = a.subs('x', 24)
     assert solve(a, 'y') == [0]
+
+from Parser import _parse_item
+
+def test_negation_type():
+    a = _parse_item('!B(a)')
+    assert isinstance(a, Negation)
