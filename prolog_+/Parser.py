@@ -125,3 +125,7 @@ def test_EQN():
     test = [': x= x**2-36', ':y+x']
     for state in test:
         assert _parse(state)
+
+def test_negation_type():
+    a = _parse_pred('!B(a)')
+    assert isinstance(a, Negation)

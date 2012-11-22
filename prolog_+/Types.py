@@ -433,9 +433,3 @@ def test_solve():
     a = parse_expr('x-y-24')
     a = a.subs('x', 24)
     assert solve(a, 'y') == [0]
-
-from Parser import _parse_item
-
-def test_negation_type():
-    a = _parse_item('!B(a)')
-    assert isinstance(a, Negation)
