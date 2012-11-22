@@ -224,7 +224,7 @@ class Statement():
     def __eq__(self, other):
         return self.left == other.left and self.right == other.right
 
-    def __ne_(self, other):
+    def __ne__(self, other):
         return not self.__eq__(self, other)
 
 import Search
