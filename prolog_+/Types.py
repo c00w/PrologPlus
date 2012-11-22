@@ -60,8 +60,11 @@ class Disjunction():
 
         return val, mapping
 
-    def prob(self):
-        return self.right.prob() + self.left.prob() - self.right.prob()*self.left.prob()
+    def prob(self, item=None):
+        if item == None:
+            return self.right.prob() + self.left.prob() - self.right.prob()*self.left.prob()
+        assert item == self
+        return self.prob()
 
     def __eq__(self, other):
         if other is None:
@@ -86,6 +89,7 @@ class Conjunction():
         pass
 
     def determines(self, other):
+        pass
         left = self.left.determines(other)
         right = self.right.determines(other)
         if left == None and right == None:
@@ -110,11 +114,20 @@ class Conjunction():
         val, mapping = self.right.solutions(CE, mapping)
         return val, mapping
 
-    def prob(self):
-        return self.left.prob() * self.right.prob()
+    def prob(self, item=None):
+        if item == None:
+            return self.left.prob() * self.right.prob()
+        if self.left.determines(item):
+            return self.left.prob()
+        elif self.right.determines(item):
+            return self.right.prob()
+        assert item == self
+        return self.prob()
 
     def __eq__(self, other):
         if other is None:
+            return False
+        if type(self) != type(other):
             return False
         return type(self) == type(other) and self.left == other.left and self.right == other.right
 
@@ -147,9 +160,13 @@ class Negation():
     def set_prob(self, p):
         self.child.set_prob(1-p)
 
-    def prob(self):
-        print 'Negation Prob Called'
-        return 1- self.child.prob()
+    def prob(self, item=None):
+        if item == None:
+            return 1- self.child.prob()
+        elif item == self:
+            return self.prob()
+        else:
+            return self.child.prob(item)
 
     def __eq__(self, other):
         if other is None:
@@ -172,8 +189,8 @@ class Statement():
         self.right = right
 
     def determines(self, item):
-        if isinstance(item, Negation):
-            return self.left.determines(item.child)
+        while isinstance(item, Negation):
+            item = item.child
         return self.left.determines(item)
 
     def update_prob(self):
@@ -201,8 +218,8 @@ class Statement():
         val, mapping = self.right.solutions(CE, [{}])
         return val
 
-    def prob(self):
-        return self.left.prob() if self.left else self.right.prob()
+    def prob(self, item=None):
+        return self.left.prob(item)
 
     def __eq__(self, other):
         return self.left == other.left and self.right == other.right
@@ -214,7 +231,6 @@ import Search
 
 class Predicate():
     def __init__(self, name, args, prob=1.):
-        name = name.replace('!!','')
         self.name = name
         self.args = args
         self.probability = prob
@@ -222,7 +238,11 @@ class Predicate():
     def set_prob(self, p):
         self.probability = p
 
-    def prob(self):
+    def prob(self, item=None):
+        if item == None:
+            return self.probability
+        assert isinstance(item, Predicate) 
+        assert self.determines(item)
         return self.probability
 
     def hasVariables(self):
@@ -254,18 +274,21 @@ class Predicate():
             if len(Search.determination_list(CE, new_self)) == 0:
                 continue
 
-            if Search.search_solutions(CE, self) is not None:
-                prob, nmapping_uf = Search.search_solutions(CE, self, return_mapping=True)
-                nmapping = {}
-                for a,b in nmapping_uf.items():
-                    #print a,b
-                    if isinstance(a, Atom):
-                        nmapping[b]=a
-                    else:
-                        nmapping[a]=b
 
-                nmapping_list.append(dict(mapping.items() + nmapping.items()))
-                self.probability = prob
+            if Search.search_solutions(CE, self) is not None:
+                self.probability = 0.0
+                for prob, nmapping_uf in Search.search_solutions(CE, self):
+                    nmapping = {}
+                    for a,b in nmapping_uf.items():
+                        #print a,b
+                        if isinstance(a, Atom):
+                            nmapping[b]=a
+                        else:
+                            nmapping[a]=b
+
+                    nmapping_list.append(dict(mapping.items() + nmapping.items()))
+                    self.probability = self.probability + prob - self.probability*prob
+        print self
         #print self, mapping_list, nmapping_list
         return len(nmapping_list) > 0, nmapping_list
 
@@ -294,6 +317,8 @@ class Predicate():
     def __eq__(self, other):
         if other is None:
             return False
+        if not isinstance(other, Predicate):
+            return False
         return type(self) == type(other) and self.name == other.name and self.args == other.args
 
     def __ne__(self, other):
@@ -318,9 +343,6 @@ class Atom(Predicate):
         new = deepcopy(self)
         assert new == self
         return new
-
-    def prob(self):
-        return self.probability
 
     def __ne__(self, other):
         return not self.__eq__(other)

@@ -29,7 +29,8 @@ def _parse_statement(source):
     else:
         rhs = None
     lhs = _parse_term(lhs)
-
+    if rhs == None:
+        lhs.set_prob(1.0)
     return Statement(lhs, rhs)
 
 def count(source):
