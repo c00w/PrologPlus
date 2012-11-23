@@ -3,9 +3,12 @@ from Types import Negation
 
 def search(CE, term):
     prob = search_solutions(CE, term)
-    if prob is not None:
-        return prob
-    return 'Unknown'
+    if prob is None:
+        return 'Unknown'
+    probability = 0.0
+    for p, mapping in prob:
+        probability = probability + p - p * probability
+    return probability
 
 def search_expr(CE, var):
     usefull = [eqn for eqn in CE if eqn.determines(var) != None]
@@ -65,11 +68,11 @@ def test_search():
     import Parser
     source = "A(a):."
     CE = Parser._parse(source)
-    assert search(CE, Parser._parse_pred('A(a)'))[0][0] == 1.0
+    assert search(CE, Parser._parse_pred('A(a)')) == 1.0
 
     source = "A(X):."
     CE = Parser._parse(source)
-    assert search(CE, Parser._parse_pred('A(a)'))[0][0] == 1.0
+    assert search(CE, Parser._parse_pred('A(a)')) == 1.0
 
 def test_search_compl():
     import Parser
@@ -78,8 +81,8 @@ def test_search_compl():
     b = Parser._parse_pred('B(b)')
     CE = Parser._parse(source)
 
-    assert search(CE, b)[0][0] == 1.0
-    assert search(CE, Pred)[0][0] == 1.0
+    assert search(CE, b) == 1.0
+    assert search(CE, Pred) == 1.0
 
     count_det = 0
     for state in CE:
@@ -100,8 +103,8 @@ def test_search_compl_neg():
     b = Parser._parse_pred('B(b)')
     CE = Parser._parse(source)
 
-    assert search(CE, notb)[0][0] == 1.0
-    assert search(CE, b)[0][0] == 0.0
+    assert search(CE, notb) == 1.0
+    assert search(CE, b) == 0.0
     count_det = 0
     for state in CE:
         if state.determines(Pred) is not None:
@@ -111,8 +114,8 @@ def test_search_compl_neg():
     assert count_det == 1
     assert new_state.solutions(CE) == True
     print search(CE, Pred)
-    assert search(CE, varPred)[0][0] == 1.0
-    assert search(CE, Pred)[0][0] == 1.0
+    assert search(CE, varPred) == 1.0
+    assert search(CE, Pred) == 1.0
 
 def test_search_unknown_not_solutions():
     import Parser
@@ -138,7 +141,7 @@ def test_search_and_unify():
     source = "A(a):B(X),C(X).\nB(c):.\nC(c):."
     Pred = Parser._parse_pred('A(a)')
     CE = Parser._parse(source)
-    assert search(CE, Pred)[0][0] == 1.0
+    assert search(CE, Pred) == 1.0
 
 
 def test_search_time():
@@ -148,7 +151,7 @@ def test_search_time():
     b = Parser._parse_pred('B(b)')
     CE = Parser._parse(source)
 
-    assert search(CE, b)[0][0] == 1.0
+    assert search(CE, b) == 1.0
 
     count_det = 0
     for state in CE:
@@ -159,7 +162,7 @@ def test_search_time():
     assert count_det == 1
     assert new_state.solutions(CE) == True
 
-    assert search(CE, Pred)[0][0] == 1.0
+    assert search(CE, Pred) == 1.0
 
 def test_search_chaining_sub():
     import Parser
@@ -176,10 +179,10 @@ def test_search_chaining_sub():
             #print mapping
             #print new_state
 
-    assert search(CE, Parser._parse_pred('B(a)'))[0][0] == 1.0
-    assert search(CE, Parser._parse_item('!B(a)'))[0][0] == 0.0
-    assert search(CE, Parser._parse_pred('C(a)'))[0][0] == 1.0
-    assert search(CE, Parser._parse_item('!C(a)'))[0][0] == 0.0
+    assert search(CE, Parser._parse_pred('B(a)')) == 1.0
+    assert search(CE, Parser._parse_item('!B(a)')) == 0.0
+    assert search(CE, Parser._parse_pred('C(a)')) == 1.0
+    assert search(CE, Parser._parse_item('!C(a)')) == 0.0
     assert search(CE, Parser._parse_pred('C(b)')) == 'Unknown'
     assert search(CE, Parser._parse_item('!C(b)')) == 'Unknown'
 
@@ -189,12 +192,12 @@ def test_prob_chaining():
 
     CE = Parser._parse(source)
 
-    assert search(CE, Parser._parse_pred('A(a)'))[0][0] == 1.0
-    assert search(CE, Parser._parse_pred('!A(a)'))[0][0] == 0.0
-    assert search(CE, Parser._parse_pred('C(a)'))[0][0] == 0.0
-    assert search(CE, Parser._parse_pred('!C(a)'))[0][0] == 1.0
-    assert search(CE, Parser._parse_pred('B(a)'))[0][0] == 0.0
-    assert search(CE, Parser._parse_pred('!B(a)'))[0][0] == 1.0
+    assert search(CE, Parser._parse_pred('A(a)')) == 1.0
+    assert search(CE, Parser._parse_pred('!A(a)')) == 0.0
+    assert search(CE, Parser._parse_pred('C(a)')) == 0.0
+    assert search(CE, Parser._parse_pred('!C(a)')) == 1.0
+    assert search(CE, Parser._parse_pred('B(a)')) == 0.0
+    assert search(CE, Parser._parse_pred('!B(a)')) == 1.0
 
 def test_prob_chaining():
     import Parser
@@ -202,9 +205,9 @@ def test_prob_chaining():
 
     CE = Parser._parse(source)
 
-    assert search(CE, Parser._parse_pred('C(a)'))[0][0] == 0.25
-    assert search(CE, Parser._parse_pred('!C(a)'))[0][0] == 0.75
-    assert len(search(CE, Parser._parse_pred('D(a)'))) == 2
+    assert search(CE, Parser._parse_pred('C(a)')) == 0.25
+    assert search(CE, Parser._parse_pred('!C(a)')) == 0.75
+    assert search(CE, Parser._parse_pred('D(a)')) == 0.75
 
 def test_expr_search_simple():
     import Parser
