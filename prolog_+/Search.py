@@ -196,6 +196,15 @@ def test_prob_chaining():
     assert search(CE, Parser._parse_pred('B(a)'))[0][0] == 0.0
     assert search(CE, Parser._parse_pred('!B(a)'))[0][0] == 1.0
 
+def test_prob_chaining():
+    import Parser
+    source = "A(a) =| 0.5\n B(a) =| 0.5\n C(a): A(a),B(a).\nD(a):A(a).\nD(a):B(a)."
+
+    CE = Parser._parse(source)
+
+    assert search(CE, Parser._parse_pred('C(a)'))[0][0] == 0.25
+    assert search(CE, Parser._parse_pred('!C(a)'))[0][0] == 0.75
+    assert len(search(CE, Parser._parse_pred('D(a)'))) == 2
 
 def test_expr_search_simple():
     import Parser

@@ -1,4 +1,4 @@
-from copy import copy, deepcopy
+from copy import deepcopy
 from sympy.parsing.sympy_parser import parse_expr
 from sympy.solvers import solve
 
@@ -225,7 +225,7 @@ class Statement():
         return self.left == other.left and self.right == other.right
 
     def __ne__(self, other):
-        return not self.__eq__(self, other)
+        return not self.__eq__(other)
 
 import Search
 
@@ -288,7 +288,6 @@ class Predicate():
 
                     nmapping_list.append(dict(mapping.items() + nmapping.items()))
                     self.probability = self.probability + prob - self.probability*prob
-        print self
         #print self, mapping_list, nmapping_list
         return len(nmapping_list) > 0, nmapping_list
 
